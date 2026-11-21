@@ -36,12 +36,33 @@ body {
   border-bottom: 1px solid var(--line);
 }
 .topbar-inner {
-  max-width: 980px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 14px 18px 12px;
   display: flex;
   align-items: center;
   gap: 14px;
+}
+.view-nav {
+  display: flex;
+  gap: 6px;
+  background: #e8eef5;
+  border-radius: 999px;
+  padding: 4px;
+}
+.view-tab {
+  font: inherit;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  color: var(--blue);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-weight: 700;
+}
+.view-tab.is-on {
+  background: var(--blue);
+  color: white;
 }
 .brand { flex: 1; min-width: 0; }
 .brand-kicker {
@@ -76,10 +97,59 @@ body {
   padding: 6px 0;
 }
 main {
-  max-width: 980px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 18px 16px 48px;
 }
+.know-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 14px;
+}
+.know-tools input {
+  font: inherit;
+  font-size: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #d5deea;
+  width: 100%;
+}
+.know-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+@media (min-width: 900px) {
+  .know-layout { grid-template-columns: 250px 1fr; align-items: start; }
+  .know-toc { position: sticky; top: 78px; max-height: calc(100vh - 96px); overflow: auto; }
+}
+.know-toc, .know-sec {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.know-toc { padding: 12px; }
+.know-toc h2, .know-sec h2 { margin: 0 0 8px; font-size: 16px; }
+.toc-chapter { margin: 10px 0 4px; font-size: 13px; font-weight: 750; color: var(--blue); }
+.know-toc a {
+  display: block;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 14px;
+  padding: 4px 2px;
+  border-radius: 8px;
+}
+.know-toc a:hover { background: #eef5fc; }
+.know-sec { padding: 16px; scroll-margin-top: 84px; }
+.know-sec h3 { margin: 12px 0 6px; font-size: 15px; color: var(--blue); }
+.know-sec ul { margin: 0; padding-left: 1.2em; }
+.know-sec li { margin: 4px 0; }
+.know-kicker { margin: 0 0 6px; color: var(--blue-2); font-size: 13px; font-weight: 700; }
+.know-sec .row-actions { margin: 12px 0 0; }
+.empty-note { color: var(--muted); }
+.is-hidden { display: none; }
 .lead {
   margin: 6px 0 16px;
   color: var(--muted);
@@ -215,4 +285,6 @@ main {
   .stem { font-size: 17px; }
   .fill-row { flex-direction: column; }
   .score-pill { display: none; }
+  .topbar-inner { flex-wrap: wrap; }
+  .view-nav { order: 3; }
 }

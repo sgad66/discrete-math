@@ -1,8 +1,11 @@
 (function () {
   const data = window.QUIZ;
+  const knowledge = window.KNOWLEDGE;
   const app = document.getElementById("app");
   const homeBtn = document.getElementById("home-btn");
   const scorePill = document.getElementById("score-pill");
+  const navPractice = document.getElementById("nav-practice");
+  const navKnowledge = document.getElementById("nav-knowledge");
   const STORE = "discrete-math-quiz-v1";
 
   const byId = new Map();
@@ -83,8 +86,122 @@
       .replace(/"/g, "&quot;");
   }
 
+  function setTab(which) {
+    navPractice.classList.toggle("is-on", which === "practice");
+    navKnowledge.classList.toggle("is-on", which === "knowledge");
+  }
+
+  function sectionText(section) {
+    const parts = [section.num, section.title];
+    (section.blocks || []).forEach((block) => {
+      parts.push(block.h);
+      (block.items || []).forEach((item) => parts.push(item));
+    });
+    return parts.join("\n");
+  }
+
+  function sectionMatches(chapter, section, needle) {
+    if (!needle) return true;
+    if (sectionText(section).toLowerCase().indexOf(needle) !== -1) return true;
+    return (chapter.num + " " + chapter.title).toLowerCase().indexOf(needle) !== -1;
+  }
+
+  function renderKnowledge() {
+    session = null;
+    setTab("knowledge");
+    homeBtn.hidden = true;
+    scorePill.hidden = true;
+    if (location.hash !== "#knowledge" && location.hash.indexOf("#s-") !== 0) {
+      history.replaceState(null, "", "#knowledge");
+    }
+    const toc = knowledge.chapters.map((chapter) => {
+      const links = chapter.sections.map((section) => {
+        return '<a href="#' + section.id + '" data-jump="' + section.id + '" data-for="' + section.id + '">' +
+          escapeHtml(section.num + " " + section.title) + "</a>";
+      }).join("");
+      return '<div class="toc-group" data-for-chapter="' + chapter.id + '"><p class="toc-chapter">' +
+        escapeHtml(chapter.num + " " + chapter.title) + "</p>" + links + "</div>";
+    }).join("");
+    const body = knowledge.chapters.map((chapter) => {
+      return chapter.sections.map((section) => {
+        const blocks = (section.blocks || []).map((block) => {
+          const items = (block.items || []).map((item) => "<li>" + escapeHtml(item) + "</li>").join("");
+          return "<h3>" + escapeHtml(block.h) + "</h3><ul>" + items + "</ul>";
+        }).join("");
+        const practice = section.practice
+          ? '<div class="row-actions"><button type="button" class="btn" data-practice="' +
+            section.practice + '">做本节课件练习</button></div>'
+          : '<p class="empty-note">本节没有单独的课件练习题。</p>';
+        return '<article class="know-sec" id="' + section.id + '" data-chapter="' + chapter.id + '">' +
+          '<p class="know-kicker">' + escapeHtml(chapter.num + " " + chapter.title) + "</p>" +
+          "<h2>" + escapeHtml(section.num + " " + section.title) + "</h2>" +
+          blocks + practice + "</article>";
+      }).join("");
+    }).join("");
+    const total = knowledge.chapters.reduce((sum, chapter) => sum + chapter.sections.length, 0);
+    app.innerHTML =
+      '<p class="lead">按 Johnsonbaugh《Discrete Mathematics》第 8 版的章节整理定义、定理、方法和记号。点目录跳到该节，搜索会筛掉对不上的节。练习仍是原来的课件题。</p>' +
+      '<div class="know-tools"><input id="know-search" type="search" placeholder="搜索章节、定义或记号，例如 归纳、欧拉、幂集"></div>' +
+      '<p class="stats-line"><span id="know-count">显示 ' + total + " / " + total + " 节</span></p>" +
+      '<div class="know-layout"><aside class="know-toc"><h2>目录</h2>' + toc +
+      '</aside><div class="know-main">' + body +
+      '<p id="know-empty" class="empty-note is-hidden">没有匹配的节。换一个词，或清空搜索。</p></div></div>';
+
+    const input = document.getElementById("know-search");
+    const count = document.getElementById("know-count");
+    const empty = document.getElementById("know-empty");
+    function applyFilter() {
+      const needle = input.value.trim().toLowerCase();
+      let shown = 0;
+      knowledge.chapters.forEach((chapter) => {
+        let chapterShown = 0;
+        chapter.sections.forEach((section) => {
+          const ok = sectionMatches(chapter, section, needle);
+          const card = document.getElementById(section.id);
+          const link = app.querySelector('[data-for="' + section.id + '"]');
+          if (card) card.classList.toggle("is-hidden", !ok);
+          if (link) link.classList.toggle("is-hidden", !ok);
+          if (ok) {
+            shown += 1;
+            chapterShown += 1;
+          }
+        });
+        const group = app.querySelector('[data-for-chapter="' + chapter.id + '"]');
+        if (group) group.classList.toggle("is-hidden", chapterShown === 0);
+      });
+      count.textContent = "显示 " + shown + " / " + total + " 节";
+      empty.classList.toggle("is-hidden", shown !== 0);
+      if (needle && shown === 1) {
+        const visible = app.querySelector(".know-sec:not(.is-hidden)");
+        if (visible) visible.scrollIntoView({ block: "start" });
+      }
+    }
+    input.addEventListener("input", applyFilter);
+    app.querySelectorAll("[data-jump]").forEach((link) => {
+      link.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        const id = link.getAttribute("data-jump");
+        const el = document.getElementById(id);
+        if (!el || el.classList.contains("is-hidden")) return;
+        history.replaceState(null, "", "#" + id);
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+    app.querySelectorAll("[data-practice]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const topic = data.topics.find((item) => item.id === btn.getAttribute("data-practice"));
+        if (!topic || !topic.questions.length) return;
+        startSession(topic.title, topic.questions.slice(), "knowledge");
+      });
+    });
+    const hashId = location.hash.slice(1);
+    const target = hashId ? document.getElementById(hashId) : null;
+    if (target) target.scrollIntoView({ block: "start" });
+  }
+
   function renderHome() {
     session = null;
+    setTab("practice");
     homeBtn.hidden = true;
     scorePill.hidden = true;
     const totals = allQuestions();
@@ -132,11 +249,11 @@
         if (mode === "shuffle") queue = shuffle(queue);
         if (mode === "wrong") queue = queue.filter((q) => resultOf(q.id) === false);
         if (!queue.length) return;
-        startSession(topic.title, queue);
+        startSession(topic.title, queue, "practice");
       });
     });
     document.getElementById("random-all").addEventListener("click", () => {
-      startSession("全部随机", shuffle(allQuestions()));
+      startSession("全部随机", shuffle(allQuestions()), "practice");
     });
     document.getElementById("clear-progress").addEventListener("click", () => {
       if (window.confirm("清除这台浏览器里的做题记录？题目本身不会变。")) {
@@ -147,7 +264,7 @@
     });
   }
 
-  function startSession(title, queue) {
+  function startSession(title, queue, returnTo) {
     session = {
       title: title,
       queue: queue,
@@ -156,9 +273,12 @@
       answered: 0,
       missed: [],
       locked: false,
-      choice: null
+      choice: null,
+      returnTo: returnTo || "practice"
     };
+    setTab("practice");
     homeBtn.hidden = false;
+    homeBtn.textContent = session.returnTo === "knowledge" ? "返回知识" : "返回目录";
     scorePill.hidden = false;
     renderQuestion();
   }
@@ -310,35 +430,49 @@
     const correct = session.correct;
     const title = session.title;
     const missedIds = session.missed.slice();
+    const returnTo = session.returnTo;
     const rate = answered ? Math.round((correct / answered) * 100) : 0;
     homeBtn.hidden = false;
+    homeBtn.textContent = returnTo === "knowledge" ? "返回知识" : "返回目录";
     scorePill.hidden = true;
     const redoWrong = missedIds.length
       ? '<button class="btn" id="redo-wrong">只做错题（' + missedIds.length + "）</button>"
       : "";
+    const backLabel = returnTo === "knowledge" ? "返回知识" : "返回目录";
     app.innerHTML =
       '<article class="end-card panel"><h2>' + escapeHtml(title) + " 成绩</h2>" +
       '<p class="big-score">' + correct + " / " + answered + "</p>" +
       "<p>正确率 " + rate + "%。本轮答错 " + missedIds.length + " 题。解析在每题提交后都已给出。</p>" +
       '<div class="end-actions">' + redoWrong +
-      '<button class="btn secondary" id="back-home">返回目录</button></div></article>';
+      '<button class="btn secondary" id="back-home">' + backLabel + "</button></div></article>";
     const wrongBtn = document.getElementById("redo-wrong");
     if (wrongBtn) {
       wrongBtn.addEventListener("click", () => {
         const queue = missedIds.map((id) => byId.get(id)).filter(Boolean);
-        startSession(title + " · 错题", queue);
+        startSession(title + " · 错题", queue, returnTo);
       });
     }
-    document.getElementById("back-home").addEventListener("click", renderHome);
+    document.getElementById("back-home").addEventListener("click", () => {
+      if (returnTo === "knowledge") renderKnowledge();
+      else renderHome();
+    });
     session = null;
   }
 
-  homeBtn.addEventListener("click", () => {
+  function leaveSession(next) {
     if (session && session.answered > 0 && session.index < session.queue.length) {
       if (!window.confirm("离开后，这一轮未答的题不会记入成绩。已提交的题会保留。")) return;
     }
-    renderHome();
-  });
+    next();
+  }
 
-  renderHome();
+  homeBtn.addEventListener("click", () => {
+    const next = session && session.returnTo === "knowledge" ? renderKnowledge : renderHome;
+    leaveSession(next);
+  });
+  navPractice.addEventListener("click", () => leaveSession(renderHome));
+  navKnowledge.addEventListener("click", () => leaveSession(renderKnowledge));
+
+  if (location.hash === "#knowledge" || location.hash.indexOf("#s-") === 0) renderKnowledge();
+  else renderHome();
 })();

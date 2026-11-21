@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>离散数学练习</title>
+  <title>离散数学</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -12,13 +12,18 @@
       <button type="button" class="text-btn" id="home-btn" hidden>返回目录</button>
       <div class="brand">
         <p class="brand-kicker">北京邮电大学 · 课件练习</p>
-        <h1>离散数学练习</h1>
+        <h1>离散数学</h1>
       </div>
+      <nav class="view-nav" aria-label="板块">
+        <button type="button" class="view-tab is-on" id="nav-practice">练习</button>
+        <button type="button" class="view-tab" id="nav-knowledge">知识</button>
+      </nav>
       <p class="score-pill" id="score-pill" hidden></p>
     </div>
   </header>
   <main id="app"></main>
   <script src="quiz-data.js"></script>
+  <script src="knowledge-data.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
